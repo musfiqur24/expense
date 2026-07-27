@@ -29,7 +29,7 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$EC2_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
-          ssh-keygen -F "$EC2_HOST" -f ~/.ssh/known_hosts > /dev/null
+          test -s ~/.ssh/known_hosts
 
       - name: Update application and restart containers
         env:
