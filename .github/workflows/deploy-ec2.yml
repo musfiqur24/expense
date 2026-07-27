@@ -29,6 +29,10 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$EC2_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+          if ! ssh-keygen -F "$EC2_HOST" -f ~/.ssh/known_hosts > /dev/null; then
+            echo "::error::EC2_KNOWN_HOSTS is missing, malformed, or does not match EC2_HOST."
+            exit 1
+          fi
 
       - name: Update application and restart containers
         env:
@@ -36,5 +40,5 @@ jobs:
           EC2_USER: ${{ secrets.EC2_USER }}
           EC2_APP_DIR: ${{ secrets.EC2_APP_DIR }}
         run: |
-          ssh -i ~/.ssh/id_ed25519 "$EC2_USER@$EC2_HOST" \
+          ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes "$EC2_USER@$EC2_HOST" \
             "cd '$EC2_APP_DIR' && git fetch origin main && git reset --hard origin/main && docker compose up -d --build --remove-orphans && docker compose ps"
