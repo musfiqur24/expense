@@ -469,3 +469,55 @@ For a real production deployment, add:
 - Environment-specific secrets
 - Backups for database volume
 - Monitoring and log collection
+
+---
+
+# GitHub Actions automatic deployment to EC2
+
+The workflow in `.github/workflows/deploy-ec2.yml` deploys every push to the
+`main` branch. It securely connects to your EC2 instance, updates its local Git
+checkout to the pushed commit, and runs `docker compose up -d --build`.
+
+## One-time EC2 setup
+
+The project on EC2 must be a Git clone, rather than an uploaded ZIP. From the
+EC2 instance, clone the repository to a permanent path such as
+`/home/ubuntu/expense` and start it once:
+
+```bash
+git clone git@github.com:YOUR_GITHUB_USERNAME/YOUR_REPOSITORY.git /home/ubuntu/expense
+cd /home/ubuntu/expense
+cp .env.example .env
+nano .env
+docker compose up -d --build
+```
+
+If the GitHub repository is private, give EC2 read-only access with a GitHub
+deploy key: generate a key on EC2 with `ssh-keygen -t ed25519 -f ~/.ssh/github_deploy_key`, add the public key in GitHub under **Settings > Deploy keys** with write access disabled, then add this host entry to `~/.ssh/config`:
+
+```text
+Host github.com
+  IdentityFile ~/.ssh/github_deploy_key
+  IdentitiesOnly yes
+```
+
+Test that `git fetch origin main` works on EC2 before enabling the workflow.
+
+## GitHub configuration
+
+In the repository, open **Settings > Environments > New environment**, create
+`production`, then add these environment secrets:
+
+| Secret | Value |
+| --- | --- |
+| `EC2_HOST` | EC2 public IP address or domain name (no `http://`) |
+| `EC2_USER` | Usually `ubuntu` for an Ubuntu EC2 AMI |
+| `EC2_APP_DIR` | Absolute EC2 project path, for example `/home/ubuntu/expense` |
+| `EC2_SSH_PRIVATE_KEY` | The complete contents of the private `.pem`/OpenSSH key used to SSH to EC2 |
+| `EC2_KNOWN_HOSTS` | Output of `ssh-keyscan -H YOUR_EC2_PUBLIC_IP` run from a trusted machine |
+
+The app settings belong in the `.env` file on EC2, not in GitHub Actions. This
+project needs only `NODE_ENV`, `PORT`, `MONGO_URI`, and `CORS_ORIGIN`; use
+`.env.example` as the template. Do not commit `.env`, SSH private keys, or any
+database credentials. The workflow does not require AWS access keys because it
+deploys directly over SSH.
