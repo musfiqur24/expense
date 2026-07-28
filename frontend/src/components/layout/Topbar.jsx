@@ -15,7 +15,7 @@ export function Topbar({ user, month, onMonthChange, onAddTransaction }) {
     <header className="topbar">
       <div className="topbar__mobile-brand brand">
         <span className="brand__mark"><WalletCards size={19} /></span>
-        <span>Northstar</span>
+        <span>Budget Buddy</span>
       </div>
 
       <label className="month-picker" aria-label="Select reporting month">

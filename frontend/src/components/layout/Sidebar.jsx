@@ -13,7 +13,7 @@ export function Sidebar({ route, onNavigate, onLogout }) {
     <aside className="sidebar">
       <button className="brand brand--sidebar" type="button" onClick={() => onNavigate("dashboard")} aria-label="Go to overview">
         <span className="brand__mark"><WalletCards size={21} /></span>
-        <span>Northstar</span>
+        <span>Budget Buddy</span>
       </button>
 
       <nav className="sidebar__nav" aria-label="Main navigation">

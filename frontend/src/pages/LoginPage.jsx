@@ -11,7 +11,7 @@ export function LoginPage() {
       <section className="login-panel">
         <div className="login-brand brand">
           <span className="brand__mark"><WalletCards size={22} /></span>
-          <span>Northstar</span>
+          <span>Budget Buddy</span>
         </div>
         <div className="login-panel__copy">
           <span className="login-kicker">A calmer way to manage money</span>
@@ -26,7 +26,7 @@ export function LoginPage() {
         <p className="login-privacy"><LockKeyhole size={15} /> We only use Google to securely sign you in.</p>
       </section>
 
-      <aside className="login-showcase" aria-label="Northstar features">
+      <aside className="login-showcase" aria-label="Budget Buddy features">
         <div className="login-showcase__orb login-showcase__orb--one" />
         <div className="login-showcase__orb login-showcase__orb--two" />
         <div className="showcase-card showcase-card--balance">

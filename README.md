@@ -1,4 +1,4 @@
-# Northstar — personal expense tracker
+# Budget Buddy — personal expense tracker
 
 A light, responsive MERN expense tracker with Google sign-in. Each signed-in
 user manages their own income, expenses, custom categories, category budgets,
