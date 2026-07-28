@@ -1,0 +1,3 @@
+northstar-expense.mywire.org {
+    reverse_proxy frontend:80
+}
