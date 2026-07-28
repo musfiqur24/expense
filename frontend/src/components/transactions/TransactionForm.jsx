@@ -5,6 +5,7 @@ import { getCategory, transactionDate, transactionType } from "../../utils/data"
 import { toDateInput } from "../../utils/format";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
+import { SearchableSelect } from "../ui/SearchableSelect";
 
 function initialValues(transaction) {
   const category = getCategory(transaction?.category || transaction?.categoryId);
@@ -24,6 +25,13 @@ export function TransactionForm({ transaction, categories, saving, onClose, onSa
   const availableCategories = useMemo(
     () => categories.filter((category) => !category.type || String(category.type).toLowerCase() === form.type),
     [categories, form.type]
+  );
+  const categoryOptions = useMemo(
+    () => [
+      { value: "", label: "Choose a category" },
+      ...availableCategories.map((category) => ({ value: category._id || category.id, label: category.name }))
+    ],
+    [availableCategories]
   );
 
   useEffect(() => {
@@ -77,14 +85,12 @@ export function TransactionForm({ transaction, categories, saving, onClose, onSa
           <label>Amount<input inputMode="decimal" min="0" step="0.01" type="number" value={form.amount} onChange={(event) => update("amount", event.target.value)} placeholder="0.00" /></label>
           <label>Date<input type="date" value={form.date} onChange={(event) => update("date", event.target.value)} /></label>
         </div>
-        <label>Category
-          <select value={form.categoryId} onChange={(event) => update("categoryId", event.target.value)}>
-            <option value="">Choose a category</option>
-            {availableCategories.map((category) => <option key={category._id || category.id} value={category._id || category.id}>{category.name}</option>)}
-          </select>
+        <div className="field-group">
+          <span className="field-group__label">Category</span>
+          <SearchableSelect ariaLabel="Transaction category" value={form.categoryId} options={categoryOptions} onChange={(value) => update("categoryId", value)} />
           {!availableCategories.length && <small className="field-hint">Create a {form.type} category first.</small>}
-        </label>
-        <label>Note <span className="label-optional">Optional</span><textarea value={form.note} onChange={(event) => update("note", event.target.value)} placeholder="Add a little context" rows="3" /></label>
+        </div>
+        <label>Note<textarea value={form.note} onChange={(event) => update("note", event.target.value)} placeholder="Optional — add a little context" rows="3" /></label>
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions">
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>

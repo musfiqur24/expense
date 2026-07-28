@@ -11,10 +11,12 @@ const items = [
 export function Sidebar({ route, onNavigate, onLogout }) {
   return (
     <aside className="sidebar">
-      <button className="brand brand--sidebar" type="button" onClick={() => onNavigate("dashboard")} aria-label="Go to overview">
-        <span className="brand__mark"><WalletCards size={21} /></span>
-        <span>Budget Buddy</span>
-      </button>
+      <div className="sidebar__brand-card">
+        <button className="brand brand--sidebar" type="button" onClick={() => onNavigate("dashboard")} aria-label="Go to overview">
+          <span className="brand__mark"><WalletCards size={21} /></span>
+          <span>Budget Buddy</span>
+        </button>
+      </div>
 
       <nav className="sidebar__nav" aria-label="Main navigation">
         {items.map(({ id, label, icon: Icon }) => (

@@ -2,12 +2,14 @@ import React from "react";
 import { CirclePlus, Pencil, Tags, Trash2 } from "lucide-react";
 import { categoryApi } from "../api";
 import { CategoryForm } from "../components/categories/CategoryForm";
+import { PageHeader } from "../components/layout/PageHeader";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LoadingState } from "../components/ui/LoadingState";
+import { CategoriesSkeleton } from "../components/ui/LoadingSkeletons";
 import { Notice } from "../components/ui/Notice";
 import { useNotice } from "../hooks/useNotice";
 import { getId } from "../utils/data";
+import { withMinimumLoadingTime } from "../utils/loading";
 
 const TYPE_COPY = {
   expense: { label: "Expense categories", helper: "Group the places your money goes." },
@@ -25,7 +27,7 @@ export function CategoriesPage() {
   const loadCategories = React.useCallback(async (signal) => {
     setLoading(true);
     try {
-      const data = await categoryApi.list(type);
+      const data = await withMinimumLoadingTime(() => categoryApi.list(type));
       if (!signal?.aborted) setCategories(data);
     } catch (error) {
       if (!signal?.aborted) showNotice(error.message || "We could not load categories.", "error");
@@ -72,6 +74,7 @@ export function CategoriesPage() {
   const copy = TYPE_COPY[type];
   return (
     <div className="categories-page">
+      <PageHeader>
       <header className="page-heading page-heading--inline">
         <div>
           <p className="page-eyebrow">Your organisation</p>
@@ -80,6 +83,7 @@ export function CategoriesPage() {
         </div>
         <Button onClick={() => setEditing({ type })}><CirclePlus size={18} />New category</Button>
       </header>
+      </PageHeader>
       <section className="surface-card categories-panel">
         <div className="segmented-control" role="tablist" aria-label="Category type">
           <button className={type === "expense" ? "is-active" : ""} type="button" role="tab" aria-selected={type === "expense"} onClick={() => setType("expense")}>Expenses</button>
@@ -87,9 +91,9 @@ export function CategoriesPage() {
         </div>
         <div className="categories-panel__heading">
           <div><h2>{copy.label}</h2><p>{copy.helper}</p></div>
-          <span>{categories.length} total</span>
+          {loading ? <span className="category-total-skeleton" aria-hidden="true" /> : <span>{categories.length} total</span>}
         </div>
-        {loading ? <LoadingState compact label="Loading categories…" /> : categories.length ? <div className="category-grid">
+        {loading ? <CategoriesSkeleton /> : categories.length ? <div className="category-grid">
           {categories.map((category, index) => <article className="category-card" key={getId(category) || category.name}>
             <span className="category-card__swatch" style={category.color ? { backgroundColor: category.color } : { "--category-index": index }}><Tags size={18} /></span>
             <strong>{category.name || category.title}</strong>

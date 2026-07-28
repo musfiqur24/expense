@@ -4,11 +4,13 @@ import { dashboardApi } from "../api";
 import { BudgetCard } from "../components/budgets/BudgetCard";
 import { DonutChart } from "../components/charts/DonutChart";
 import { TrendChart } from "../components/charts/TrendChart";
+import { PageHeader } from "../components/layout/PageHeader";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LoadingState } from "../components/ui/LoadingState";
+import { DashboardSkeleton } from "../components/ui/LoadingSkeletons";
 import { budgetCategory, budgetLimit, budgetSpent, isBudgetExceeded, transactionAmount, transactionCategory, transactionDate, transactionType } from "../utils/data";
 import { formatCurrency, formatDate, formatMonth, toNumber } from "../utils/format";
+import { withMinimumLoadingTime } from "../utils/loading";
 
 function dashboardShape(data = {}) {
   const summary = data.summary || data.totals || {};
@@ -71,7 +73,7 @@ export function DashboardPage({ month, refreshKey, onNavigate }) {
   const load = React.useCallback(async (signal) => {
     setState((current) => ({ ...current, loading: true, error: "" }));
     try {
-      const response = await dashboardApi.get(month);
+      const response = await withMinimumLoadingTime(() => dashboardApi.get(month));
       if (!signal?.aborted) setState({ loading: false, error: "", data: dashboardShape(response) });
     } catch (error) {
       if (!signal?.aborted) setState({ loading: false, error: error.message || "We could not load your dashboard.", data: null });
@@ -84,7 +86,7 @@ export function DashboardPage({ month, refreshKey, onNavigate }) {
     return () => controller.abort();
   }, [load, refreshKey]);
 
-  if (state.loading && !state.data) return <LoadingState label="Loading your overview…" />;
+  if (state.loading && !state.data) return <DashboardSkeleton />;
   if (state.error && !state.data) return <div className="page-error"><p>{state.error}</p><Button onClick={() => load()}>Try again</Button></div>;
 
   const data = state.data || dashboardShape();
@@ -95,6 +97,7 @@ export function DashboardPage({ month, refreshKey, onNavigate }) {
 
   return (
     <div className="dashboard-page">
+      <PageHeader>
       <header className="page-heading">
         <div>
           <p className="page-eyebrow">{formatMonth(month)}</p>
@@ -103,6 +106,7 @@ export function DashboardPage({ month, refreshKey, onNavigate }) {
         </div>
         <Button variant="secondary" onClick={() => onNavigate("transactions")}>View all activity <ArrowRight size={17} /></Button>
       </header>
+      </PageHeader>
 
       {state.error && <div className="inline-warning"><AlertTriangle size={18} /> {state.error}</div>}
       {exceededBudgets.length > 0 && (

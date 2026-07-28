@@ -1,15 +1,18 @@
 import React from "react";
 import { Download, Filter, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { categoryApi, transactionApi } from "../api";
+import { PageHeader } from "../components/layout/PageHeader";
 import { TransactionForm } from "../components/transactions/TransactionForm";
 import { TransactionList } from "../components/transactions/TransactionList";
 import { Button } from "../components/ui/Button";
-import { LoadingState } from "../components/ui/LoadingState";
+import { TransactionsSkeleton } from "../components/ui/LoadingSkeletons";
 import { Notice } from "../components/ui/Notice";
+import { SearchableSelect } from "../components/ui/SearchableSelect";
 import { useNotice } from "../hooks/useNotice";
 import { downloadBlob, downloadTransactionsCsv } from "../utils/csv";
 import { getId } from "../utils/data";
-import { formatMonth } from "../utils/format";
+import { formatMonth, todayValue } from "../utils/format";
+import { withMinimumLoadingTime } from "../utils/loading";
 
 function combineCategories(results) {
   const seen = new Set();
@@ -21,8 +24,8 @@ function combineCategories(results) {
   });
 }
 
-export function TransactionsPage({ month, composerSignal, onDataChanged }) {
-  const [filters, setFilters] = React.useState({ month, type: "all", category: "", search: "" });
+export function TransactionsPage({ month, openComposer = false, onComposerHandled, onDataChanged }) {
+  const [filters, setFilters] = React.useState(() => ({ month, date: todayValue(), type: "all", category: "", search: "" }));
   const [transactions, setTransactions] = React.useState([]);
   const [categories, setCategories] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -31,17 +34,19 @@ export function TransactionsPage({ month, composerSignal, onDataChanged }) {
   const { notice, showNotice, clearNotice } = useNotice();
 
   React.useEffect(() => {
-    setFilters((current) => ({ ...current, month }));
+    setFilters((current) => ({ ...current, month, date: current.date?.startsWith(month) ? current.date : "" }));
   }, [month]);
 
   React.useEffect(() => {
-    if (composerSignal) setEditing({});
-  }, [composerSignal]);
+    if (!openComposer) return;
+    setEditing({});
+    onComposerHandled?.();
+  }, [openComposer, onComposerHandled]);
 
   const loadTransactions = React.useCallback(async (signal) => {
     setLoading(true);
     try {
-      const data = await transactionApi.list(filters);
+      const data = await withMinimumLoadingTime(() => transactionApi.list(filters));
       if (!signal?.aborted) setTransactions(data);
     } catch (error) {
       if (!signal?.aborted) showNotice(error.message || "We could not load transactions.", "error");
@@ -114,6 +119,7 @@ export function TransactionsPage({ month, composerSignal, onDataChanged }) {
 
   return (
     <div className="transactions-page">
+      <PageHeader>
       <header className="page-heading page-heading--inline">
         <div>
           <p className="page-eyebrow">{formatMonth(filters.month)}</p>
@@ -125,15 +131,31 @@ export function TransactionsPage({ month, composerSignal, onDataChanged }) {
           <Button onClick={() => setEditing({})}><Plus size={18} />Add transaction</Button>
         </div>
       </header>
+      </PageHeader>
 
       <section className="surface-card transaction-workspace">
         <div className="filter-bar">
           <label className="search-field"><Search size={18} /><input value={filters.search} onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Search transactions" /></label>
-          <label className="filter-control"><Filter size={16} /><span className="visually-hidden">Transaction type</span><select value={filters.type} onChange={(event) => setFilters((current) => ({ ...current, type: event.target.value }))}><option value="all">All types</option><option value="expense">Expenses</option><option value="income">Income</option></select></label>
-          <label className="filter-control"><SlidersHorizontal size={16} /><span className="visually-hidden">Category</span><select value={filters.category} onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}><option value="">All categories</option>{categories.map((category) => <option key={getId(category)} value={getId(category)}>{category.name}</option>)}</select></label>
-          <label className="filter-control filter-control--month"><span className="visually-hidden">Month</span><input type="month" value={filters.month} onChange={(event) => setFilters((current) => ({ ...current, month: event.target.value }))} /></label>
+          <SearchableSelect
+            ariaLabel="Filter transaction type"
+            className="filter-control filter-control--select"
+            leadingIcon={Filter}
+            onChange={(value) => setFilters((current) => ({ ...current, type: value }))}
+            options={[{ value: "all", label: "All types" }, { value: "expense", label: "Expenses" }, { value: "income", label: "Income" }]}
+            value={filters.type}
+          />
+          <SearchableSelect
+            ariaLabel="Filter by category"
+            className="filter-control filter-control--select"
+            leadingIcon={SlidersHorizontal}
+            onChange={(value) => setFilters((current) => ({ ...current, category: value }))}
+            options={[{ value: "", label: "All categories" }, ...categories.map((category) => ({ value: getId(category), label: category.name }))]}
+            value={filters.category}
+          />
+          <label className="filter-control filter-control--month"><span className="visually-hidden">Month</span><input type="month" value={filters.month} onChange={(event) => setFilters((current) => ({ ...current, month: event.target.value, date: current.date?.startsWith(event.target.value) ? current.date : "" }))} /></label>
+          <label className="filter-control filter-control--date"><span className="visually-hidden">Exact date</span><input type="date" value={filters.date} onChange={(event) => setFilters((current) => ({ ...current, date: event.target.value, month: event.target.value ? event.target.value.slice(0, 7) : current.month }))} /></label>
         </div>
-        {loading ? <LoadingState compact label="Loading transactions…" /> : <TransactionList transactions={transactions} onEdit={setEditing} onDelete={deleteTransaction} />}
+        {loading ? <TransactionsSkeleton /> : <TransactionList transactions={transactions} onEdit={setEditing} onDelete={deleteTransaction} />}
       </section>
 
       {editing && <TransactionForm transaction={editing} categories={categories} saving={saving} onClose={() => setEditing(null)} onSave={saveTransaction} />}

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import Transaction from "../models/Transaction.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
-import { getMonthRange, parseDate } from "../utils/date.js";
+import { getDayRange, getMonthRange, parseDate } from "../utils/date.js";
 import { cleanText, escapeRegex } from "../utils/text.js";
 import { findOwnedCategory, assertCategoryType } from "../services/categoryService.js";
 import { getBudgetAlertForTransaction } from "../services/budgetService.js";
@@ -75,7 +75,10 @@ function listFilter(userId, query) {
     filter.category = query.category;
   }
 
-  if (query.month) {
+  if (query.date) {
+    const { start, end } = getDayRange(query.date);
+    filter.date = { $gte: start, $lt: end };
+  } else if (query.month) {
     const { start, end } = getMonthRange(query.month);
     filter.date = { $gte: start, $lt: end };
   } else if (query.from || query.to) {

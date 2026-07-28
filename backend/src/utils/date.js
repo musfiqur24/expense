@@ -1,6 +1,7 @@
 import ApiError from "./ApiError.js";
 
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
+const DAY_PATTERN = /^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
 
 export function currentMonth() {
   return new Date().toISOString().slice(0, 7);
@@ -20,6 +21,24 @@ export function getMonthRange(month) {
   const end = new Date(Date.UTC(year, monthNumber, 1));
 
   return { month: normalizedMonth, start, end };
+}
+
+export function getDayRange(day) {
+  const normalizedDay = String(day || "");
+  const match = DAY_PATTERN.exec(normalizedDay);
+  if (!match) throw new ApiError(400, "date must use the YYYY-MM-DD format");
+
+  const year = Number(match[0].slice(0, 4));
+  const month = Number(match[0].slice(5, 7));
+  const dayOfMonth = Number(match[0].slice(8, 10));
+  const start = new Date(Date.UTC(year, month - 1, dayOfMonth));
+
+  if (start.getUTCFullYear() !== year || start.getUTCMonth() !== month - 1 || start.getUTCDate() !== dayOfMonth) {
+    throw new ApiError(400, "date must be a valid calendar date");
+  }
+
+  const end = new Date(Date.UTC(year, month - 1, dayOfMonth + 1));
+  return { date: normalizedDay, start, end };
 }
 
 export function parseDate(value, fieldName = "date") {

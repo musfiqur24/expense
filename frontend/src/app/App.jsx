@@ -2,7 +2,7 @@ import React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { authApi } from "../api";
 import { AppShell } from "../components/layout/AppShell";
-import { LoadingState } from "../components/ui/LoadingState";
+import { AppBootSkeleton } from "../components/ui/LoadingSkeletons";
 import { Notice } from "../components/ui/Notice";
 import { useHashRoute } from "../hooks/useHashRoute";
 import { useNotice } from "../hooks/useNotice";
@@ -12,6 +12,7 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { LoginPage } from "../pages/LoginPage";
 import { TransactionsPage } from "../pages/TransactionsPage";
 import { currentMonth } from "../utils/format";
+import { withMinimumLoadingTime } from "../utils/loading";
 
 function isSignedIn(user) {
   return Boolean(
@@ -27,13 +28,13 @@ export function App() {
   const [auth, setAuth] = useState({ status: "loading", user: null });
   const [month, setMonth] = useState(currentMonth);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [composerSignal, setComposerSignal] = useState(0);
+  const [shouldOpenTransactionComposer, setShouldOpenTransactionComposer] = useState(false);
   const { route, navigate } = useHashRoute();
   const { notice, showNotice, clearNotice } = useNotice();
 
   useEffect(() => {
     let active = true;
-    authApi.me()
+    withMinimumLoadingTime(() => authApi.me())
       .then((user) => {
         if (!active) return;
         setAuth(isSignedIn(user) ? { status: "authenticated", user } : { status: "anonymous", user: null });
@@ -44,9 +45,10 @@ export function App() {
 
   const markDataChanged = useCallback(() => setRefreshKey((key) => key + 1), []);
   const startTransaction = useCallback(() => {
-    setComposerSignal(Date.now());
+    setShouldOpenTransactionComposer(true);
     navigate("transactions");
   }, [navigate]);
+  const markTransactionComposerHandled = useCallback(() => setShouldOpenTransactionComposer(false), []);
 
   async function logout() {
     try {
@@ -60,13 +62,22 @@ export function App() {
   }
 
   if (auth.status === "loading") {
-    return <div className="app-boot"><LoadingState label="Opening your money space…" /></div>;
+    return <AppBootSkeleton />;
   }
 
   if (auth.status !== "authenticated") return <LoginPage />;
 
   let page;
-  if (route === "transactions") page = <TransactionsPage month={month} composerSignal={composerSignal} onDataChanged={markDataChanged} />;
+  if (route === "transactions") {
+    page = (
+      <TransactionsPage
+        month={month}
+        openComposer={shouldOpenTransactionComposer}
+        onComposerHandled={markTransactionComposerHandled}
+        onDataChanged={markDataChanged}
+      />
+    );
+  }
   else if (route === "budgets") page = <BudgetsPage month={month} onDataChanged={markDataChanged} />;
   else if (route === "categories") page = <CategoriesPage />;
   else page = <DashboardPage month={month} refreshKey={refreshKey} onNavigate={navigate} />;

@@ -3,13 +3,15 @@ import { AlertTriangle, Plus, Target } from "lucide-react";
 import { budgetApi, categoryApi } from "../api";
 import { BudgetCard } from "../components/budgets/BudgetCard";
 import { BudgetForm } from "../components/budgets/BudgetForm";
+import { PageHeader } from "../components/layout/PageHeader";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
-import { LoadingState } from "../components/ui/LoadingState";
+import { BudgetsSkeleton } from "../components/ui/LoadingSkeletons";
 import { Notice } from "../components/ui/Notice";
 import { useNotice } from "../hooks/useNotice";
 import { getId, isBudgetExceeded } from "../utils/data";
 import { formatMonth } from "../utils/format";
+import { withMinimumLoadingTime } from "../utils/loading";
 
 export function BudgetsPage({ month, onDataChanged }) {
   const [budgets, setBudgets] = React.useState([]);
@@ -22,7 +24,7 @@ export function BudgetsPage({ month, onDataChanged }) {
   const loadBudgets = React.useCallback(async (signal) => {
     setLoading(true);
     try {
-      const data = await budgetApi.list(month);
+      const data = await withMinimumLoadingTime(() => budgetApi.list(month));
       if (!signal?.aborted) setBudgets(data);
     } catch (error) {
       if (!signal?.aborted) showNotice(error.message || "We could not load budgets.", "error");
@@ -76,6 +78,7 @@ export function BudgetsPage({ month, onDataChanged }) {
   const exceeded = budgets.filter(isBudgetExceeded);
   return (
     <div className="budgets-page">
+      <PageHeader>
       <header className="page-heading page-heading--inline">
         <div>
           <p className="page-eyebrow">{formatMonth(month)}</p>
@@ -84,9 +87,10 @@ export function BudgetsPage({ month, onDataChanged }) {
         </div>
         <Button onClick={() => setEditing({})}><Plus size={18} />Set a budget</Button>
       </header>
+      </PageHeader>
       {exceeded.length > 0 && <div className="inline-warning"><AlertTriangle size={18} /><span><strong>{exceeded.length} budget{exceeded.length > 1 ? "s are" : " is"} over limit.</strong> Review these categories before month-end.</span></div>}
       <section className="budget-grid">
-        {loading ? <LoadingState label="Loading budgets…" /> : budgets.length ? budgets.map((budget) => <BudgetCard budget={budget} key={getId(budget)} onEdit={setEditing} onDelete={deleteBudget} />) : <div className="surface-card budget-empty"><EmptyState icon={Target} title="Build your first budget" message="Start with one category you want to be more intentional about." action={<Button onClick={() => setEditing({})}><Plus size={17} />Set a budget</Button>} /></div>}
+        {loading ? <BudgetsSkeleton /> : budgets.length ? budgets.map((budget) => <BudgetCard budget={budget} key={getId(budget)} onEdit={setEditing} onDelete={deleteBudget} />) : <div className="surface-card budget-empty"><EmptyState icon={Target} title="Build your first budget" message="Start with one category you want to be more intentional about." action={<Button onClick={() => setEditing({})}><Plus size={17} />Set a budget</Button>} /></div>}
       </section>
       {editing && <BudgetForm budget={editing} categories={categories} month={month} saving={saving} onClose={() => setEditing(null)} onSave={saveBudget} />}
       <Notice notice={notice} onDismiss={clearNotice} />

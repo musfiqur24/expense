@@ -44,16 +44,19 @@ frontend/src/
 3. Add the callback URL below under **Authorized redirect URIs**:
 
    ```text
-   http://localhost/api/auth/google/callback
+   http://localhost:5000/api/auth/google/callback
    ```
 
    For deployment, replace `localhost` with your public HTTPS domain and use
    that exact URL in both Google Cloud and `GOOGLE_CALLBACK_URL`.
-4. Copy the example environment file and fill in the Google client credentials:
+4. For local Vite development, copy the backend example environment file and
+   fill in the Google client credentials:
 
    ```bash
-   cp .env.example .env
+   cp backend/.env.example backend/.env
    ```
+
+   The root `.env.example` is for Docker Compose deployments.
 
 5. Set a long, unique `SESSION_SECRET`. On an HTTPS deployment, set
    `SESSION_COOKIE_SECURE=true`, and make `FRONTEND_URL`, `CORS_ORIGIN`, and

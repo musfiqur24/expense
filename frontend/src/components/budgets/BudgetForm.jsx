@@ -4,6 +4,7 @@ import { Save } from "lucide-react";
 import { budgetCategory, budgetLimit } from "../../utils/data";
 import { Button } from "../ui/Button";
 import { Modal } from "../ui/Modal";
+import { SearchableSelect } from "../ui/SearchableSelect";
 
 function valuesFor(budget) {
   return {
@@ -32,15 +33,17 @@ export function BudgetForm({ budget, categories, month, saving, onClose, onSave 
   }
 
   const editing = Boolean(budget?._id || budget?.id);
+  const categoryOptions = [
+    { value: "", label: "Choose a category" },
+    ...categories.map((category) => ({ value: category._id || category.id, label: category.name }))
+  ];
   return (
     <Modal title={editing ? "Edit budget" : "Set a budget"} description="Budgets reset for each calendar month." onClose={onClose}>
       <form className="entry-form" onSubmit={submit}>
-        <label>Expense category
-          <select value={form.categoryId} onChange={(event) => setForm((current) => ({ ...current, categoryId: event.target.value }))}>
-            <option value="">Choose a category</option>
-            {categories.map((category) => <option key={category._id || category.id} value={category._id || category.id}>{category.name}</option>)}
-          </select>
-        </label>
+        <div className="field-group">
+          <span className="field-group__label">Expense category</span>
+          <SearchableSelect ariaLabel="Expense category" value={form.categoryId} options={categoryOptions} onChange={(value) => setForm((current) => ({ ...current, categoryId: value }))} />
+        </div>
         <label>Monthly limit<input type="number" min="0" step="0.01" inputMode="decimal" value={form.limit} onChange={(event) => setForm((current) => ({ ...current, limit: event.target.value }))} placeholder="0.00" autoFocus /></label>
         {error && <p className="form-error">{error}</p>}
         <div className="form-actions">
